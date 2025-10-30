@@ -4,12 +4,17 @@ const EXPIRATION_DATE = new Date(Date.UTC(2026, 0, 1)); // 2026-01-01
 
 exports.handler = async () => {
   try {
-    const privateKey = process.env.VLTR_BETA_PRIVATE_KEY;
+    let privateKey = process.env.VLTR_BETA_PRIVATE_KEY;
     if (!privateKey) {
       return {
         statusCode: 500,
         body: 'Server configuration error: Private key not found.',
       };
+    }
+
+    // Handle keys stored with escaped newlines ("\n")
+    if (privateKey.includes('\\n')) {
+      privateKey = privateKey.replace(/\\n/g, '\n');
     }
 
     const payload = {
@@ -23,7 +28,9 @@ exports.handler = async () => {
     signer.update(payloadJson);
     signer.end();
 
-    const signature = signer.sign(privateKey).toString('hex');
+    const keyObject = crypto.createPrivateKey({ key: privateKey, format: 'pem' });
+    const signatureBuffer = signer.sign({ key: keyObject, dsaEncoding: 'der' });
+    const signature = signatureBuffer.toString('hex');
 
     return {
       statusCode: 200,
