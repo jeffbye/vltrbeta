@@ -1,0 +1,6 @@
+{
+  "routes": [
+    { "src": "/validate", "dest": "/api/validate.js" }
+  ]
+}
+
