@@ -43,7 +43,11 @@ exports.handler = async () => {
     signer.update(payloadJson);
     signer.end();
 
-    const keyObject = crypto.createPrivateKey({ key: privateKey, format: 'pem', type: 'pkcs8' });
+    const keyOptions = privateKey.includes('BEGIN EC PRIVATE KEY')
+      ? { key: privateKey, format: 'pem', type: 'sec1' }
+      : { key: privateKey, format: 'pem', type: 'pkcs8' };
+
+    const keyObject = crypto.createPrivateKey(keyOptions);
     const signatureBuffer = signer.sign({ key: keyObject, dsaEncoding: 'der' });
     const signature = signatureBuffer.toString('hex');
 
