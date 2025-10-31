@@ -17,6 +17,21 @@ exports.handler = async () => {
       privateKey = privateKey.replace(/\\n/g, '\n');
     }
 
+    // Normalize line endings and trim extra whitespace
+    privateKey = privateKey.replace(/\r\n?/g, '\n').trim();
+
+    if (!privateKey.includes('BEGIN') || !privateKey.includes('END')) {
+      return {
+        statusCode: 500,
+        body: 'Server configuration error: Invalid private key format.',
+      };
+    }
+
+    // Ensure PEM has trailing newline the OpenSSL decoder expects
+    if (!privateKey.endsWith('\n')) {
+      privateKey += '\n';
+    }
+
     const payload = {
       issue_date: new Date().toISOString(),
       expiration_date: EXPIRATION_DATE.toISOString(),
@@ -28,7 +43,7 @@ exports.handler = async () => {
     signer.update(payloadJson);
     signer.end();
 
-    const keyObject = crypto.createPrivateKey({ key: privateKey, format: 'pem' });
+    const keyObject = crypto.createPrivateKey({ key: privateKey, format: 'pem', type: 'pkcs8' });
     const signatureBuffer = signer.sign({ key: keyObject, dsaEncoding: 'der' });
     const signature = signatureBuffer.toString('hex');
 
